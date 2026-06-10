@@ -6,8 +6,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GameState
-        implements Serializable {
+public class GameState implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -61,6 +60,13 @@ public class GameState
         enemies = new ArrayList<>(newEnemies);
     }
 
+    public static void setInventory(
+            Inventory newInventory
+    ) {
+
+        inventory = newInventory;
+    }
+
     // ======================================================
     // CLEAR
     // ======================================================
@@ -80,13 +86,9 @@ public class GameState
 
     public static void sync() {
 
-        party.removeIf(
-                c -> !c.isAlive()
-        );
+        party.removeIf(c -> !c.isAlive());
 
-        enemies.removeIf(
-                c -> !c.isAlive()
-        );
+        enemies.removeIf(c -> !c.isAlive());
     }
 
     // ======================================================

@@ -210,6 +210,8 @@ public class BattleSystem {
                 current.getName()
                 + " usó "
                 + item.getName()
+                + " sobre "
+                + target.getName()
         );
 
         GameState.getInventory()

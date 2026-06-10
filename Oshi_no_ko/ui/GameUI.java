@@ -54,7 +54,7 @@ public class GameUI extends JFrame {
     // ESTADO
     // ======================================================
 
-    private GameCharacter selectedEnemy;
+    private GameCharacter selectedTarget;
 
     // ======================================================
     // CONSTRUCTOR
@@ -352,7 +352,7 @@ public class GameUI extends JFrame {
 
         mainPanel.removeAll();
 
-        selectedEnemy = null;
+        selectedTarget = null;
 
         BackgroundPanel bg =
                 new BackgroundPanel(
@@ -496,16 +496,23 @@ public class GameUI extends JFrame {
 
         attackBtn.addActionListener(e -> {
 
-            if (selectedEnemy == null) {
+        if (selectedTarget == null) {
 
                 log("Seleccioná un enemigo");
 
                 return;
-            }
+        }
 
-            BattleSystem.attack(selectedEnemy);
+        if (!GameState.getEnemies().contains(selectedTarget)) {
 
-            refresh();
+                log("Debés seleccionar un enemigo");
+
+                return;
+        }
+
+        BattleSystem.attack(selectedTarget);
+
+        refresh();
         });
 
         skillBtn.addActionListener(
@@ -570,7 +577,7 @@ public class GameUI extends JFrame {
 
             BattleSystem.useSkill(
                     selected,
-                    selectedEnemy
+                    selectedTarget
             );
 
             refresh();
@@ -605,16 +612,20 @@ public class GameUI extends JFrame {
                         items.get(0)
                 );
 
-        if (selected != null) {
+        if (selectedTarget == null) {
 
-            BattleSystem.useItem(
-                    selected,
-                    BattleSystem.getCurrentCharacter()
-            );
+                log("Seleccioná un objetivo");
 
-            refresh();
+                return;
+                }
+
+                BattleSystem.useItem(
+                        selected,
+                        selectedTarget
+                );
+
+                refresh();
         }
-    }
 
     // ======================================================
     // REFRESH
@@ -683,10 +694,10 @@ public class GameUI extends JFrame {
 
         enemyPanel.removeAll();
 
-        if (selectedEnemy != null &&
-                !selectedEnemy.isAlive()) {
+        if (selectedTarget != null &&
+                !selectedTarget.isAlive()) {
 
-            selectedEnemy = null;
+            selectedTarget = null;
         }
 
         for (GameCharacter c :
@@ -725,7 +736,7 @@ public class GameUI extends JFrame {
         card.setLayout(new BorderLayout());
 
         boolean selected =
-                selectedEnemy == c;
+                selectedTarget == c;
 
         boolean currentTurn =
                 BattleSystem.getCurrentCharacter() == c;
@@ -930,28 +941,29 @@ public class GameUI extends JFrame {
         // CLICK ENEMY
         // ==================================================
 
-        if (enemy) {
+        // ==================================================
+        // CLICK CHARACTER
+        // ==================================================
 
-            card.addMouseListener(
-                    new MouseAdapter() {
+        card.addMouseListener(
+                new MouseAdapter() {
 
                         @Override
                         public void mouseClicked(
                                 MouseEvent e
                         ) {
 
-                            selectedEnemy = c;
+                                selectedTarget = c;
 
-                            log(
-                                    "Objetivo seleccionado: "
-                                            + c.getName()
-                            );
+                                log(
+                                        "Objetivo seleccionado: "
+                                                + c.getName()
+                                );
 
-                            refreshEnemies();
+                                refresh();
                         }
-                    }
-            );
-        }
+                }
+        );
 
         return card;
     }
@@ -1231,7 +1243,7 @@ public class GameUI extends JFrame {
                 createButton("VOLVER AL MENÚ");
 
         menu.addActionListener(
-                e -> showStartScreen()
+                e -> characterSelectionScreen()
         );
 
         panel.add(menu, BorderLayout.SOUTH);
