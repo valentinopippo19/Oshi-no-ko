@@ -1,6 +1,9 @@
 package system;
 
+import model.GameCharacter;
+
 import java.io.*;
+import java.util.List;
 
 public class SaveManager {
 
@@ -26,7 +29,21 @@ public class SaveManager {
                              )
                      )) {
 
-            out.writeObject(gameState);
+            out.writeObject(
+                    GameState.getParty()
+            );
+
+            out.writeObject(
+                    GameState.getEnemies()
+            );
+
+            out.writeObject(
+                    GameState.getSelectedEnemies()
+            );
+
+            out.writeObject(
+                    GameState.getInventory()
+            );
         }
     }
 
@@ -34,6 +51,7 @@ public class SaveManager {
     // LOAD
     // ======================================================
 
+    @SuppressWarnings("unchecked")
     public static GameState load()
             throws IOException,
             ClassNotFoundException {
@@ -51,17 +69,35 @@ public class SaveManager {
                              new FileInputStream(file)
                      )) {
 
-            Object obj =
-                    in.readObject();
+            List<GameCharacter> party =
+                    (List<GameCharacter>)
+                            in.readObject();
 
-            if (!(obj instanceof GameState state)) {
+            List<GameCharacter> enemies =
+                    (List<GameCharacter>)
+                            in.readObject();
 
-                throw new IOException(
-                        "Save corrupto"
-                );
-            }
+            List<GameCharacter> selectedEnemies =
+                    (List<GameCharacter>)
+                            in.readObject();
 
-            return state;
+            Inventory inventory =
+                    (Inventory)
+                            in.readObject();
+
+            GameState.setParty(party);
+
+            GameState.setEnemies(enemies);
+
+            GameState.setSelectedEnemies(
+                    selectedEnemies
+            );
+
+            GameState.setInventory(
+                    inventory
+            );
+
+            return new GameState();
         }
     }
 }

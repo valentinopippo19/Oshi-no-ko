@@ -20,6 +20,10 @@ public class GameState implements Serializable {
     private static List<GameCharacter> enemies =
             new ArrayList<>();
 
+    // NUEVO: guarda la selección original de enemigos
+    private static List<GameCharacter> selectedEnemies =
+            new ArrayList<>();
+
     private static Inventory inventory =
             new Inventory();
 
@@ -35,6 +39,11 @@ public class GameState implements Serializable {
     public static List<GameCharacter> getEnemies() {
 
         return enemies;
+    }
+
+    public static List<GameCharacter> getSelectedEnemies() {
+
+        return selectedEnemies;
     }
 
     public static Inventory getInventory() {
@@ -60,6 +69,13 @@ public class GameState implements Serializable {
         enemies = new ArrayList<>(newEnemies);
     }
 
+    public static void setSelectedEnemies(
+            List<GameCharacter> newEnemies
+    ) {
+
+        selectedEnemies = new ArrayList<>(newEnemies);
+    }
+
     public static void setInventory(
             Inventory newInventory
     ) {
@@ -76,6 +92,8 @@ public class GameState implements Serializable {
         party.clear();
 
         enemies.clear();
+
+        selectedEnemies.clear();
 
         inventory.clear();
     }

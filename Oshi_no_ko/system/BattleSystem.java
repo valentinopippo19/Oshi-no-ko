@@ -307,13 +307,16 @@ public class BattleSystem {
         boolean playerWon =
                 GameState.getParty()
                 .stream()
-                .anyMatch(
-                        GameCharacter::isAlive
-                );
+                .anyMatch(GameCharacter::isAlive);
 
         if(playerWon){
 
             rewardExperience();
+
+            // Restaura la selección original de enemigos
+            GameState.setEnemies(
+                    GameState.getSelectedEnemies()
+            );
 
             ui.showEndScreen(true);
 

@@ -319,15 +319,18 @@ public class GameUI extends JFrame {
 
             GameState.setParty(party);
 
-            GameState.setEnemies(enemies);
+                GameState.setEnemies(enemies);
 
-            try {
+                // Guarda una copia de la selección original
+                GameState.setSelectedEnemies(enemies);
+
+                try {
                 SaveManager.save(null);
-        } catch (IOException e1) {
+                } catch (IOException e1) {
                 e1.printStackTrace();
-        }
+                }
 
-            showBattleScreen();
+                showBattleScreen();
         });
 
         JPanel south =
@@ -1239,21 +1242,34 @@ public class GameUI extends JFrame {
 
         panel.add(result, BorderLayout.CENTER);
 
-        JButton menu =
-                createButton("VOLVER AL MENÚ");
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+                buttonPanel.setOpaque(false);
 
-        menu.addActionListener(
-                e -> characterSelectionScreen()
-        );
+                JButton inicioButton =
+                        createButton("VOLVER AL INICIO");
 
-        panel.add(menu, BorderLayout.SOUTH);
+                inicioButton.addActionListener(
+                        e -> showStartScreen()
+                );
 
-        bg.add(panel);
+                JButton personajesButton =
+                        createButton("SELECCIONAR PERSONAJES");
 
-        mainPanel.add(bg);
+                personajesButton.addActionListener(
+                        e -> characterSelectionScreen()
+                );
 
-        refreshMain();
-    }
+                buttonPanel.add(inicioButton);
+                buttonPanel.add(personajesButton);
+
+                panel.add(buttonPanel, BorderLayout.SOUTH);
+
+                bg.add(panel);
+
+                mainPanel.add(bg);
+
+                refreshMain();
+        }
 
     // ======================================================
     // BACKGROUND PANEL
