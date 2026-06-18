@@ -1002,7 +1002,7 @@ public class GameUI extends JFrame {
 
         JPanel grid =
                 new JPanel(
-                        new GridLayout(0,2,15,15)
+                        new GridLayout(0,1,15,15)
                 );
 
         grid.setOpaque(false);
@@ -1010,7 +1010,7 @@ public class GameUI extends JFrame {
         for (GameCharacter c : chars) {
 
             grid.add(
-                    createCharacterToggle(c)
+                    createSelectionCard(c)
             );
         }
 
@@ -1026,51 +1026,152 @@ public class GameUI extends JFrame {
         return wrapper;
     }
 
-    private JToggleButton createCharacterToggle(
-            GameCharacter c
-    ) {
+    private JPanel createSelectionCard(
+                GameCharacter c
+     )  {
 
-        JToggleButton btn =
-                new JToggleButton(
-                        c.getName()
-                );
+        JPanel panel = createDarkPanel();
 
-        btn.setVerticalTextPosition(
-                SwingConstants.BOTTOM
+        panel.setLayout(new BorderLayout());
+
+        panel.setPreferredSize(
+                new Dimension(220, 280)
         );
 
-        btn.setHorizontalTextPosition(
-                SwingConstants.CENTER
+        panel.setBorder(
+                BorderFactory.createLineBorder(
+                        Color.WHITE,
+                        2
+                )
         );
 
-        btn.setForeground(Color.WHITE);
+        JToggleButton select =
+                new JToggleButton(c.getName());
 
-        btn.setBackground(
+        select.setForeground(Color.WHITE);
+
+        select.setBackground(
                 new Color(40,40,40)
         );
 
-        btn.setFocusPainted(false);
+        select.setFocusPainted(false);
 
-        btn.setFont(NORMAL_FONT);
+        select.addActionListener(e -> {
+
+                if(select.isSelected()) {
+
+                        panel.setBorder(
+                                BorderFactory.createLineBorder(
+                                        Color.GREEN,
+                                        4
+                                )
+                        );
+
+                } else {
+
+                        panel.setBorder(
+                                BorderFactory.createLineBorder(
+                                        Color.WHITE,
+                                        2
+                                )
+                        );
+                }
+        });
+
+        JLabel name =
+                new JLabel(c.getName());
+
+        name.setHorizontalAlignment(
+                JLabel.CENTER
+        );
+
+        name.setForeground(Color.WHITE);
+
+        name.setFont(
+                new Font(
+                        "Arial",
+                        Font.BOLD,
+                        18
+                )
+        );
+
+        JLabel image =
+                new JLabel();
+
+        image.setHorizontalAlignment(
+                JLabel.CENTER
+        );
 
         if (c.getImageIcon() != null) {
 
-            Image img =
-                    c.getImageIcon()
-                            .getImage()
-                            .getScaledInstance(
-                                    100,
-                                    100,
-                                    Image.SCALE_SMOOTH
-                            );
+                Image img =
+                        c.getImageIcon()
+                                .getImage()
+                                .getScaledInstance(
+                                        100,
+                                        100,
+                                        Image.SCALE_SMOOTH
+                                );
 
-            btn.setIcon(
-                    new ImageIcon(img)
-            );
+                image.setIcon(
+                        new ImageIcon(img)
+                );
         }
 
-        return btn;
+        JTextArea stats =
+                new JTextArea(
+                        "HP: " + c.getMaxHp()
+                        + "\nMP: " + c.getMaxMana()
+                        + "\nATK: " + c.getAttack()
+                        + "\nDEF: " + c.getDefense()
+                        + "\nSPD: " + c.getSpeed()
+                );
+
+        stats.setEditable(false);
+        stats.setOpaque(false);
+        stats.setForeground(Color.WHITE);
+
+        stats.setBorder(
+                BorderFactory.createEmptyBorder(
+                        5,
+                        10,
+                        5,
+                        10
+                )
+        );
+
+        panel.add(name, BorderLayout.NORTH);
+        panel.add(image, BorderLayout.CENTER);
+        JPanel south =
+                new JPanel(
+                        new BorderLayout()
+                );
+
+        south.setOpaque(false);
+
+        south.add(
+                stats,
+                BorderLayout.CENTER
+        );
+
+        south.add(
+                select,
+                BorderLayout.SOUTH
+        );
+
+        panel.add(
+                south,
+                BorderLayout.SOUTH
+        );
+
+        panel.putClientProperty(
+                "toggle",
+                select
+        );
+
+        return panel;
     }
+
 
     private void collectSelectedCharacters(
             JPanel panel,
@@ -1091,17 +1192,22 @@ public class GameUI extends JFrame {
                 grid.getComponents();
 
         for (int i = 0;
-             i < components.length;
-             i++) {
+                i < components.length;
+                i++) {
 
-            JToggleButton btn =
-                    (JToggleButton)
-                            components[i];
+                JPanel card =
+                        (JPanel) components[i];
 
-            if (btn.isSelected()) {
+                JToggleButton btn =
+                        (JToggleButton)
+                                card.getClientProperty(
+                                        "toggle"
+                                );
 
-                result.add(source.get(i));
-            }
+                if (btn.isSelected()) {
+
+                        result.add(source.get(i));
+                }
         }
     }
 
