@@ -6,18 +6,16 @@ public class HealItem extends Item {
 
     private final int healAmount;
 
-    public HealItem(
-            String name,
-            int healAmount
-    ) {
+    public HealItem() {
+        super("Heal Item");
+        this.healAmount = 20;
+    }
 
+    public HealItem(String name, int healAmount) {
         super(name);
 
         if (healAmount <= 0) {
-
-            throw new IllegalArgumentException(
-                    "Heal amount debe ser mayor a 0"
-            );
+            throw new IllegalArgumentException("Heal amount debe ser mayor a 0");
         }
 
         this.healAmount = healAmount;
@@ -25,7 +23,6 @@ public class HealItem extends Item {
 
     @Override
     public void use(GameCharacter target) {
-
         target.heal(healAmount);
     }
 
@@ -35,8 +32,6 @@ public class HealItem extends Item {
 
     @Override
     public String toString() {
-
-        return getName() +
-                " (+" + healAmount + " HP)";
+        return getName() + " (+" + healAmount + " HP)";
     }
 }

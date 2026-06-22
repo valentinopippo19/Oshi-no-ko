@@ -1,234 +1,99 @@
 package ui;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.awt.*;
+import javax.swing.*;
+
 import items.Item;
 import model.GameCharacter;
 import model.PlayerCharacter;
 import skills.Skill;
 import system.*;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-public class GameUI extends JFrame {
-
-    // ======================================================
-    // CONSTANTES
-    // ======================================================
-
-    private static final Color PANEL_COLOR =
-            new Color(0, 0, 0, 190);
-
-    private static final Color BUTTON_COLOR =
-            new Color(45, 45, 45);
-
-    private static final Font TITLE_FONT =
-            new Font("Arial", Font.BOLD, 40);
-
-    private static final Font NORMAL_FONT =
-            new Font("Arial", Font.BOLD, 16);
-
-    // ======================================================
-    // COMPONENTES
-    // ======================================================
+public class GameUI extends JFrame implements BattleListener {
 
     private JPanel mainPanel;
+    private GameController controller;
 
-    private JPanel playerPanel;
     private JPanel enemyPanel;
-
+    private JPanel playerPanel;
     private JTextArea logArea;
-
-    private JLabel turnLabel;
 
     private JButton attackBtn;
     private JButton skillBtn;
     private JButton defendBtn;
     private JButton itemBtn;
 
-    // ======================================================
-    // ESTADO
-    // ======================================================
-
     private GameCharacter selectedTarget;
-
-    // ======================================================
-    // CONSTRUCTOR
-    // ======================================================
 
     public GameUI() {
 
         setTitle("OSHI NO BATTLE RPG");
-
         setSize(1280, 720);
-
         setLocationRelativeTo(null);
-
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
-        mainPanel =
-                new JPanel(new BorderLayout());
-
+        mainPanel = new JPanel(new BorderLayout());
         setContentPane(mainPanel);
+
+        controller = new GameController(this);
 
         showStartScreen();
 
         setVisible(true);
     }
 
-    // ======================================================
+    // ==================================================
     // START SCREEN
-    // ======================================================
-
+    // ==================================================
     public void showStartScreen() {
 
         mainPanel.removeAll();
 
         BackgroundPanel bg =
-                new BackgroundPanel(
-                        "resources/portada.jpg"
-                );
+            new BackgroundPanel("resources/portada.jpg");
 
         bg.setLayout(new BorderLayout());
 
-        JLabel title =
-                new JLabel("OSHI NO BATTLE RPG");
-
-        title.setHorizontalAlignment(
-                JLabel.CENTER
-        );
-
+        JLabel title = new JLabel("OSHI NO BATTLE RPG", JLabel.CENTER);
+        title.setFont(new Font("Arial", Font.BOLD, 40));
         title.setForeground(Color.WHITE);
 
-        title.setFont(TITLE_FONT);
+        JPanel menu = new JPanel(new FlowLayout(FlowLayout.CENTER, 50, 200));
+        menu.setOpaque(false);
 
-        title.setBorder(
-                BorderFactory.createEmptyBorder(
-                        40,
-                        0,
-                        40,
-                        0
-                )
-        );
+        JButton newGame = new JButton("NUEVA PARTIDA");
+        JButton loadGame = new JButton("CARGAR PARTIDA");
 
-        bg.add(title, BorderLayout.NORTH);
+        newGame.setPreferredSize(new Dimension(200, 80));
+        loadGame.setPreferredSize(new Dimension(200, 80));
 
-        JPanel menu =
-                createDarkPanel();
-
-        menu.setLayout(
-                new GridLayout(2, 1, 20, 20)
-        );
-
-        menu.setBorder(
-                BorderFactory.createEmptyBorder(
-                        30,
-                        40,
-                        30,
-                        40
-                )
-        );
-
-        JButton newGame =
-                createButton("NUEVA PARTIDA");
-
-        JButton loadGame =
-                createButton("CARGAR PARTIDA");
-
-        // ==================================================
-        // NUEVA PARTIDA
-        // ==================================================
-
-        newGame.addActionListener(e -> {
-
-            GameState.clear();
-
-            characterSelectionScreen();
-        });
-
-        // ==================================================
-        // CARGAR PARTIDA
-        // ==================================================
-
-        loadGame.addActionListener(e -> {
-
-            try {
-                SaveManager.load();
-            } catch (ClassNotFoundException | IOException e1) {
-                e1.printStackTrace();
-            }
-
-            if (GameState.getParty().isEmpty()) {
-
-                JOptionPane.showMessageDialog(
-                        this,
-                        "No hay partida guardada"
-                );
-
-                return;
-            }
-
-            showBattleScreen();
-        });
+        newGame.addActionListener(e -> controller.startNewGame());
+        loadGame.addActionListener(e -> controller.loadGame());
 
         menu.add(newGame);
-
         menu.add(loadGame);
 
-        JPanel wrapper =
-                new JPanel(new GridBagLayout());
-
-        wrapper.setOpaque(false);
-
-        wrapper.add(menu);
-
-        bg.add(wrapper, BorderLayout.CENTER);
+        bg.add(title, BorderLayout.NORTH);
+        bg.add(menu, BorderLayout.CENTER);
 
         mainPanel.add(bg);
 
         refreshMain();
     }
 
-    // ======================================================
+    // ==================================================
     // CHARACTER SELECTION
-    // ======================================================
-
+    // ==================================================
     public void characterSelectionScreen() {
 
         mainPanel.removeAll();
 
         BackgroundPanel bg =
-                new BackgroundPanel(
-                        "resources/fondoSeleccion.jpg"
-                );
+            new BackgroundPanel("resources/fondoSeleccion.jpg");
 
         bg.setLayout(new BorderLayout());
-
-        JLabel title =
-                new JLabel("SELECCIONÁ LOS EQUIPOS");
-
-        title.setHorizontalAlignment(
-                JLabel.CENTER
-        );
-
-        title.setForeground(Color.WHITE);
-
-        title.setFont(TITLE_FONT);
-
-        title.setBorder(
-                BorderFactory.createEmptyBorder(
-                        20,
-                        0,
-                        20,
-                        0
-                )
-        );
-
-        bg.add(title, BorderLayout.NORTH);
 
         List<GameCharacter> allPlayers =
                 CharacterFactory.createAllCharacters();
@@ -236,1178 +101,450 @@ public class GameUI extends JFrame {
         List<GameCharacter> allEnemies =
                 EnemyFactory.createEnemies();
 
-        JPanel center =
-                new JPanel(
-                        new GridLayout(1, 2, 30, 0)
-                );
+        JPanel allyPanel = createSelectionPanel("ALIADOS", allPlayers);
+        JPanel enemyPanelUI = createSelectionPanel("ENEMIGOS", allEnemies);
 
+        JPanel center = new JPanel(new GridLayout(1, 2, 20, 0));
         center.setOpaque(false);
 
-        center.setBorder(
-                BorderFactory.createEmptyBorder(
-                        20,
-                        40,
-                        20,
-                        40
-                )
-        );
-
-        JPanel allyPanel =
-                createSelectionPanel(
-                        "ALIADOS",
-                        allPlayers
-                );
-
-        JPanel enemySelectionPanel =
-                createSelectionPanel(
-                        "ENEMIGOS",
-                        allEnemies
-                );
-
         center.add(allyPanel);
+        center.add(enemyPanelUI);
 
-        center.add(enemySelectionPanel);
-
-        bg.add(center, BorderLayout.CENTER);
-
-        JButton startBattle =
-                createButton("INICIAR BATALLA");
-
-        startBattle.setPreferredSize(
-                new Dimension(300, 60)
-        );
+        JButton startBattle = new JButton("INICIAR BATALLA");
 
         startBattle.addActionListener(e -> {
 
-            List<GameCharacter> party =
-                    new ArrayList<>();
+            List<GameCharacter> party = new ArrayList<>();
+            List<GameCharacter> enemies = new ArrayList<>();
 
-            List<GameCharacter> enemies =
-                    new ArrayList<>();
+            collectSelectedCharacters(allyPanel, party);
+            collectSelectedCharacters(enemyPanelUI, enemies);
 
-            collectSelectedCharacters(
-                    allyPanel,
-                    allPlayers,
-                    party
-            );
-
-            collectSelectedCharacters(
-                    enemySelectionPanel,
-                    allEnemies,
-                    enemies
-            );
-
-            if (party.isEmpty()) {
-
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Seleccioná al menos un aliado"
-                );
-
+            if (party.isEmpty() || enemies.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Selección inválida");
                 return;
             }
 
-            if (enemies.isEmpty()) {
-
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Seleccioná al menos un enemigo"
-                );
-
-                return;
-            }
-
-            GameState.setParty(party);
-
-                GameState.setEnemies(enemies);
-
-                // Guarda una copia de la selección original
-                GameState.setSelectedEnemies(enemies);
-
-                try {
-                SaveManager.save(null);
-                } catch (IOException e1) {
-                e1.printStackTrace();
-                }
-
-                showBattleScreen();
+            controller.startBattle(party, enemies);
         });
 
-        JPanel south =
-                new JPanel();
-
-        south.setOpaque(false);
-
-        south.add(startBattle);
-
-        bg.add(south, BorderLayout.SOUTH);
+        bg.add(center, BorderLayout.CENTER);
+        bg.add(startBattle, BorderLayout.SOUTH);
 
         mainPanel.add(bg);
 
         refreshMain();
     }
 
-    // ======================================================
+    // ==================================================
     // BATTLE SCREEN
-    // ======================================================
-
+    // ==================================================
     public void showBattleScreen() {
 
         mainPanel.removeAll();
 
-        selectedTarget = null;
-
         BackgroundPanel bg =
-                new BackgroundPanel(
-                        "resources/fondo.jpg"
-                );
+            new BackgroundPanel("resources/fondo.jpg");
 
         bg.setLayout(new BorderLayout());
 
-        // ==================================================
-        // TOP
-        // ==================================================
-
-        turnLabel =
-                new JLabel("INICIANDO BATALLA");
-
-        turnLabel.setHorizontalAlignment(
-                JLabel.CENTER
-        );
-
-        turnLabel.setForeground(Color.WHITE);
-
-        turnLabel.setFont(
-                new Font("Arial", Font.BOLD, 28)
-        );
-
-        turnLabel.setBorder(
-                BorderFactory.createEmptyBorder(
-                        20,
-                        0,
-                        20,
-                        0
-                )
-        );
-
-        bg.add(turnLabel, BorderLayout.NORTH);
-
-        // ==================================================
-        // ENEMIES
-        // ==================================================
-
-        enemyPanel =
-                new JPanel(
-                        new FlowLayout(
-                                FlowLayout.RIGHT,
-                                40,
-                                30
-                        )
-                );
+        enemyPanel = new JPanel(new FlowLayout());
+        playerPanel = new JPanel(new FlowLayout());
 
         enemyPanel.setOpaque(false);
-        bg.add(enemyPanel, BorderLayout.EAST);
-
-        // ==================================================
-        // BOTTOM
-        // ==================================================
-
-        JPanel bottom =
-                new JPanel(new BorderLayout());
-
-        bottom.setOpaque(false);
-
-        // ==================================================
-        // PLAYERS
-        // ==================================================
-
-        playerPanel =
-                new JPanel(
-                        new FlowLayout(
-                                FlowLayout.LEFT,
-                                30,
-                                20
-                        )
-                );
-
         playerPanel.setOpaque(false);
-        bg.add(playerPanel, BorderLayout.WEST);
 
-        // ==================================================
-        // LOG
-        // ==================================================
-
-        logArea =
-                new JTextArea(6, 30);
-
+        logArea = new JTextArea();
         logArea.setEditable(false);
 
-        logArea.setLineWrap(true);
+        bg.add(enemyPanel, BorderLayout.EAST);
+        bg.add(playerPanel, BorderLayout.WEST);
+        bg.add(new JScrollPane(logArea), BorderLayout.SOUTH);
 
-        logArea.setWrapStyleWord(true);
+        JPanel actions = new JPanel(new FlowLayout());
+        JButton saveBtn = new JButton("GUARDAR");
 
-        logArea.setFont(
-                new Font("Monospaced", Font.BOLD, 15)
-        );
+        saveBtn.addActionListener(e -> controller.saveGame());
 
-        logArea.setBackground(
-                new Color(0,0,0,210)
-        );
+        actions.add(saveBtn);
 
-        logArea.setForeground(Color.WHITE);
+        attackBtn = new JButton("ATACAR");
+        skillBtn = new JButton("SKILL");
+        defendBtn = new JButton("DEFENDER");
+        itemBtn = new JButton("ITEM");
 
-        JScrollPane scroll =
-                new JScrollPane(logArea);
-
-        bottom.add(scroll, BorderLayout.CENTER);
-        bg.add(bottom, BorderLayout.SOUTH);
-
-        // ==================================================
-        // ACTIONS
-        // ==================================================
-
-        JPanel actions =
-                createDarkPanel();
-
-        actions.setLayout(
-                new FlowLayout(
-                        FlowLayout.CENTER,
-                        20,
-                        10
-                )
-        );
-
-        attackBtn = createButton("ATACAR");
-        skillBtn = createButton("SKILL");
-        defendBtn = createButton("DEFENDER");
-        itemBtn = createButton("ITEM");
+        attackBtn.addActionListener(e -> controller.attack(selectedTarget));
+        defendBtn.addActionListener(e -> controller.defend());
+        skillBtn.addActionListener(e -> openSkillMenu());
+        itemBtn.addActionListener(e -> openInventoryMenu());
 
         actions.add(attackBtn);
         actions.add(skillBtn);
         actions.add(defendBtn);
         actions.add(itemBtn);
 
-        bottom.add(actions, BorderLayout.SOUTH);
-
-        bg.add(bottom, BorderLayout.SOUTH);
+        bg.add(actions, BorderLayout.SOUTH);
 
         mainPanel.add(bg);
 
-        // ==================================================
-        // ACTIONS
-        // ==================================================
-
-        attackBtn.addActionListener(e -> {
-
-        if (selectedTarget == null) {
-
-                log("Seleccioná un enemigo");
-
-                return;
-        }
-
-        if (!GameState.getEnemies().contains(selectedTarget)) {
-
-                log("Debés seleccionar un enemigo");
-
-                return;
-        }
-
-        BattleSystem.attack(selectedTarget);
-
-        refresh();
-        });
-
-        skillBtn.addActionListener(
-                e -> openSkillMenu()
-        );
-
-        defendBtn.addActionListener(e -> {
-
-            BattleSystem.defend();
-
-            refresh();
-        });
-
-        itemBtn.addActionListener(
-                e -> openInventoryMenu()
-        );
+        refreshMain();
 
         BattleSystem.setUI(this);
-
         refresh();
-
         BattleSystem.startBattle();
-
-        refreshMain();
     }
 
-    // ======================================================
-    // SKILLS
-    // ======================================================
-
-    private void openSkillMenu() {
-
-        GameCharacter current =
-                BattleSystem.getCurrentCharacter();
-
-        if (current == null) {
-            return;
-        }
-
-        List<Skill> skills =
-                current.getSkills();
-
-        if (skills.isEmpty()) {
-
-            log("No tiene skills");
-
-            return;
-        }
-
-        Skill selected =
-                (Skill) JOptionPane.showInputDialog(
-                        this,
-                        "Seleccioná una skill",
-                        "Skills",
-                        JOptionPane.PLAIN_MESSAGE,
-                        null,
-                        skills.toArray(),
-                        skills.get(0)
-                );
-
-        if (selected != null) {
-
-            BattleSystem.useSkill(
-                    selected,
-                    selectedTarget
-            );
-
-            refresh();
-        }
-    }
-
-    // ======================================================
-    // INVENTORY
-    // ======================================================
-
-    private void openInventoryMenu() {
-
-        List<Item> items =
-                GameState.getInventory()
-                        .getItems();
-
-        if (items.isEmpty()) {
-
-            log("No hay items");
-
-            return;
-        }
-
-        Item selected =
-                (Item) JOptionPane.showInputDialog(
-                        this,
-                        "Seleccioná un item",
-                        "Inventario",
-                        JOptionPane.PLAIN_MESSAGE,
-                        null,
-                        items.toArray(),
-                        items.get(0)
-                );
-
-        if (selectedTarget == null) {
-
-                log("Seleccioná un objetivo");
-
-                return;
-                }
-
-                BattleSystem.useItem(
-                        selected,
-                        selectedTarget
-                );
-
-                refresh();
-        }
-
-    // ======================================================
-    // REFRESH
-    // ======================================================
-
-    public void refresh() {
-
-        if (playerPanel == null ||
-                enemyPanel == null) {
-            return;
-        }
-
-        refreshPlayers();
-
-        refreshEnemies();
-
-        refreshTurnLabel();
-
-        repaint();
-    }
-
-    private void refreshTurnLabel() {
-
-        if (turnLabel == null) {
-            return;
-        }
-
-        GameCharacter current =
-                BattleSystem.getCurrentCharacter();
-
-        if (current == null) {
-
-            turnLabel.setText("");
-
-            return;
-        }
-
-        turnLabel.setText(
-                "TURNO DE " +
-                        current.getName().toUpperCase()
-        );
-    }
-
-    private void refreshPlayers() {
-
-        playerPanel.removeAll();
-
-        for (GameCharacter c :
-                GameState.getParty()) {
-
-            if (!c.isAlive()) {
-                continue;
-            }
-
-            playerPanel.add(
-                    createCharacterCard(c, false)
-            );
-        }
-
-        playerPanel.revalidate();
-
-        playerPanel.repaint();
-    }
-
-    private void refreshEnemies() {
-
-        enemyPanel.removeAll();
-
-        if (selectedTarget != null &&
-                !selectedTarget.isAlive()) {
-
-            selectedTarget = null;
-        }
-
-        for (GameCharacter c :
-                GameState.getEnemies()) {
-
-            if (!c.isAlive()) {
-                continue;
-            }
-
-            enemyPanel.add(
-                    createCharacterCard(c, true)
-            );
-        }
-
-        enemyPanel.revalidate();
-
-        enemyPanel.repaint();
-    }
-
-    // ======================================================
-    // CHARACTER CARD
-    // ======================================================
-
-    private JPanel createCharacterCard(
-            GameCharacter c,
-            boolean enemy
-    ) {
-
-        JPanel card =
-                createDarkPanel();
-
-        card.setPreferredSize(
-                new Dimension(200, 320)
-        );
-
-        card.setLayout(new BorderLayout());
-
-        boolean selected =
-                selectedTarget == c;
-
-        boolean currentTurn =
-                BattleSystem.getCurrentCharacter() == c;
-
-        Color borderColor =
-                currentTurn
-                        ? Color.YELLOW
-                        : selected
-                        ? Color.RED
-                        : Color.WHITE;
-
-        int borderSize =
-                currentTurn
-                        ? 5
-                        : selected
-                        ? 4
-                        : 2;
-
-        card.setBorder(
-                BorderFactory.createCompoundBorder(
-
-                        BorderFactory.createLineBorder(
-                                borderColor,
-                                borderSize
-                        ),
-
-                        BorderFactory.createEmptyBorder(
-                                10,
-                                10,
-                                10,
-                                10
-                        )
-                )
-        );
-
-        // ==================================================
-        // NAME
-        // ==================================================
-
-        JLabel name =
-                new JLabel(c.getName());
-
-        name.setHorizontalAlignment(
-                JLabel.CENTER
-        );
-
-        name.setForeground(Color.WHITE);
-
-        name.setFont(
-                new Font("Arial", Font.BOLD, 20)
-        );
-
-        card.add(name, BorderLayout.NORTH);
-
-        // ==================================================
-        // IMAGE
-        // ==================================================
-
-        JLabel image =
-                new JLabel();
-
-        image.setHorizontalAlignment(
-                JLabel.CENTER
-        );
-
-        if (c.getImageIcon() != null) {
-
-            Image img =
-                    c.getImageIcon()
-                            .getImage()
-                            .getScaledInstance(
-                                    150,
-                                    150,
-                                    Image.SCALE_SMOOTH
-                            );
-
-            image.setIcon(
-                    new ImageIcon(img)
-            );
-        }
-
-        JPanel center =
-                new JPanel(new BorderLayout());
-
-        center.setOpaque(false);
-
-        center.add(image, BorderLayout.CENTER);
-
-        // ==================================================
-        // STATUS
-        // ==================================================
-
-        JLabel status =
-                new JLabel(
-                        "Estado: " +
-                                c.getStatus()
-                );
-
-        status.setHorizontalAlignment(
-                JLabel.CENTER
-        );
-
-        status.setForeground(Color.CYAN);
-
-        center.add(status, BorderLayout.SOUTH);
-
-        card.add(center, BorderLayout.CENTER);
-
-        // ==================================================
-        // BARS
-        // ==================================================
-
-        JPanel bars =
-                new JPanel(
-                        new GridLayout(3,1,0,5)
-                );
-
-        bars.setOpaque(false);
-
-        // ==================================================
-        // HP
-        // ==================================================
-
-        JProgressBar hpBar =
-                new JProgressBar(
-                        0,
-                        c.getMaxHp()
-                );
-
-        hpBar.setValue(c.getHp());
-
-        hpBar.setStringPainted(true);
-
-        hpBar.setString(
-                "HP: " +
-                        c.getHp()
-                        + " / "
-                        + c.getMaxHp()
-        );
-
-        // ==================================================
-        // MP
-        // ==================================================
-
-        JProgressBar manaBar =
-                new JProgressBar(
-                        0,
-                        c.getMaxMana()
-                );
-
-        manaBar.setValue(c.getMana());
-
-        manaBar.setStringPainted(true);
-
-        manaBar.setString(
-                "MP: " +
-                        c.getMana()
-                        + " / "
-                        + c.getMaxMana()
-        );
-
-        bars.add(hpBar);
-
-        bars.add(manaBar);
-
-        // ==================================================
-        // LEVEL
-        // ==================================================
-
-        if (c instanceof PlayerCharacter player) {
-
-            JLabel level =
-                    new JLabel(
-                            "LVL " + player.getLevel()
-                    );
-
-            level.setForeground(Color.ORANGE);
-
-            level.setHorizontalAlignment(
-                    JLabel.CENTER
-            );
-
-            bars.add(level);
-
-        } else {
-
-            JLabel enemyLabel =
-                    new JLabel("ENEMY");
-
-            enemyLabel.setForeground(Color.RED);
-
-            enemyLabel.setHorizontalAlignment(
-                    JLabel.CENTER
-            );
-
-            bars.add(enemyLabel);
-        }
-
-        card.add(bars, BorderLayout.SOUTH);
-
-        // ==================================================
-        // CLICK ENEMY
-        // ==================================================
-
-        // ==================================================
-        // CLICK CHARACTER
-        // ==================================================
-
-        card.addMouseListener(
-                new MouseAdapter() {
-
-                        @Override
-                        public void mouseClicked(
-                                MouseEvent e
-                        ) {
-
-                                selectedTarget = c;
-
-                                log(
-                                        "Objetivo seleccionado: "
-                                                + c.getName()
-                                );
-
-                                refresh();
-                        }
-                }
-        );
-
-        return card;
-    }
-
-    // ======================================================
-    // SELECTION PANEL
-    // ======================================================
-
-    private JPanel createSelectionPanel(
-            String title,
-            List<GameCharacter> chars
-    ) {
-
-        JPanel wrapper =
-                createDarkPanel();
-
-        wrapper.setLayout(new BorderLayout());
-
-        JLabel label =
-                new JLabel(title);
-
-        label.setHorizontalAlignment(
-                JLabel.CENTER
-        );
-
+    // ==================================================
+    // SELECTION PANEL (FIX REAL)
+    // ==================================================
+    private JPanel createSelectionPanel(String title, List<GameCharacter> chars) {
+
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+
+        JLabel label = new JLabel(title, JLabel.CENTER);
+        label.setFont(new Font("Arial", Font.BOLD, 20));
         label.setForeground(Color.WHITE);
 
-        label.setFont(
-                new Font("Arial", Font.BOLD, 24)
-        );
-
-        wrapper.add(label, BorderLayout.NORTH);
-
-        JPanel grid =
-                new JPanel(
-                        new GridLayout(0,1,15,15)
-                );
-
+        JPanel grid = new JPanel(new GridLayout(0, 1, 10, 10));
         grid.setOpaque(false);
 
         for (GameCharacter c : chars) {
-
-            grid.add(
-                    createSelectionCard(c)
-            );
+            grid.add(createSelectionCard(c));
         }
 
-        JScrollPane scroll =
-                new JScrollPane(grid);
-
+        JScrollPane scroll = new JScrollPane(grid);
         scroll.setOpaque(false);
-
         scroll.getViewport().setOpaque(false);
 
+        wrapper.add(label, BorderLayout.NORTH);
         wrapper.add(scroll, BorderLayout.CENTER);
 
         return wrapper;
     }
 
-    private JPanel createSelectionCard(
-                GameCharacter c
-     )  {
+    private JPanel createSelectionCard(GameCharacter c) {
 
-        JPanel panel = createDarkPanel();
-
-        panel.setLayout(new BorderLayout());
-
-        panel.setPreferredSize(
-                new Dimension(220, 280)
-        );
-
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setOpaque(false);
+        panel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.setOpaque(false);
         panel.setBorder(
-                BorderFactory.createLineBorder(
-                        Color.WHITE,
-                        2
-                )
+                BorderFactory.createLineBorder(Color.WHITE, 2)
         );
 
-        JToggleButton select =
-                new JToggleButton(c.getName());
-
-        select.setForeground(Color.WHITE);
-
-        select.setBackground(
-                new Color(40,40,40)
-        );
-
-        select.setFocusPainted(false);
-
-        select.addActionListener(e -> {
-
-                if(select.isSelected()) {
-
-                        panel.setBorder(
-                                BorderFactory.createLineBorder(
-                                        Color.GREEN,
-                                        4
-                                )
-                        );
-
-                } else {
-
-                        panel.setBorder(
-                                BorderFactory.createLineBorder(
-                                        Color.WHITE,
-                                        2
-                                )
-                        );
-                }
-        });
-
-        JLabel name =
-                new JLabel(c.getName());
-
-        name.setHorizontalAlignment(
+        JLabel name = new JLabel(
+                c.getName(),
                 JLabel.CENTER
         );
 
         name.setForeground(Color.WHITE);
+        name.setFont(new Font("Arial", Font.BOLD, 16));
 
-        name.setFont(
-                new Font(
-                        "Arial",
-                        Font.BOLD,
-                        18
-                )
+        String imagePath = getCharacterImage(c.getName());
+
+        ImageIcon icon = new ImageIcon(imagePath);
+
+        Image img = icon.getImage().getScaledInstance(
+                120,
+                120,
+                Image.SCALE_SMOOTH
         );
 
-        JLabel image =
-                new JLabel();
+        JLabel imageLabel =
+                new JLabel(new ImageIcon(img));
 
-        image.setHorizontalAlignment(
-                JLabel.CENTER
+        JTextArea stats = new JTextArea(
+                "HP: " + c.getMaxHp()
+                + "\nATK: " + c.getAttack()
+                + "\nDEF: " + c.getDefense()
         );
-
-        if (c.getImageIcon() != null) {
-
-                Image img =
-                        c.getImageIcon()
-                                .getImage()
-                                .getScaledInstance(
-                                        100,
-                                        100,
-                                        Image.SCALE_SMOOTH
-                                );
-
-                image.setIcon(
-                        new ImageIcon(img)
-                );
-        }
-
-        JTextArea stats =
-                new JTextArea(
-                        "HP: " + c.getMaxHp()
-                        + "\nMP: " + c.getMaxMana()
-                        + "\nATK: " + c.getAttack()
-                        + "\nDEF: " + c.getDefense()
-                        + "\nSPD: " + c.getSpeed()
-                );
 
         stats.setEditable(false);
         stats.setOpaque(false);
-        stats.setForeground(Color.WHITE);
+        stats.setForeground(Color.black);
 
-        stats.setBorder(
-                BorderFactory.createEmptyBorder(
-                        5,
-                        10,
-                        5,
-                        10
-                )
-        );
+        JToggleButton toggle =
+                new JToggleButton("SELECCIONAR");
+
+        panel.putClientProperty("character", c);
+        panel.putClientProperty("toggle", toggle);
+
+        JPanel center = new JPanel(new BorderLayout());
+        center.setOpaque(false);
+
+        center.add(imageLabel, BorderLayout.NORTH);
+        center.add(stats, BorderLayout.CENTER);
 
         panel.add(name, BorderLayout.NORTH);
-        panel.add(image, BorderLayout.CENTER);
-        JPanel south =
-                new JPanel(
-                        new BorderLayout()
-                );
-
-        south.setOpaque(false);
-
-        south.add(
-                stats,
-                BorderLayout.CENTER
-        );
-
-        south.add(
-                select,
-                BorderLayout.SOUTH
-        );
-
-        panel.add(
-                south,
-                BorderLayout.SOUTH
-        );
-
-        panel.putClientProperty(
-                "toggle",
-                select
-        );
+        panel.add(center, BorderLayout.CENTER);
+        panel.add(toggle, BorderLayout.SOUTH);
 
         return panel;
     }
 
+    private String getCharacterImage(String name) {
+
+        name = name.toLowerCase();
+
+        if (name.contains("ai"))
+            return "resources/ai.png";
+
+        if (name.contains("akane"))
+            return "resources/akane.png";
+
+        if (name.contains("kana"))
+            return "resources/kana.png";
+
+        if (name.contains("ruby"))
+            return "resources/ruby.png";
+
+        if (name.contains("mem"))
+            return "resources/mem.png";
+
+        if (name.contains("miyako"))
+            return "resources/miyako.png";
+
+        return "resources/ai.png";
+    }
 
     private void collectSelectedCharacters(
-            JPanel panel,
-            List<GameCharacter> source,
+            JPanel wrapper,
             List<GameCharacter> result
     ) {
 
-        JScrollPane scroll =
-                (JScrollPane)
-                        panel.getComponent(1);
+        JScrollPane scroll = (JScrollPane) wrapper.getComponent(1);
+        JPanel grid = (JPanel) scroll.getViewport().getView();
 
-        JPanel grid =
-                (JPanel)
-                        scroll.getViewport()
-                                .getView();
+        for (Component comp : grid.getComponents()) {
 
-        Component[] components =
-                grid.getComponents();
+            JPanel card = (JPanel) comp;
 
-        for (int i = 0;
-                i < components.length;
-                i++) {
+            JToggleButton btn =
+                    (JToggleButton) card.getClientProperty("toggle");
 
-                JPanel card =
-                        (JPanel) components[i];
+            if (btn != null && btn.isSelected()) {
 
-                JToggleButton btn =
-                        (JToggleButton)
-                                card.getClientProperty(
-                                        "toggle"
-                                );
+                GameCharacter c =
+                        (GameCharacter) card.getClientProperty("character");
 
-                if (btn.isSelected()) {
-
-                        result.add(source.get(i));
-                }
+                result.add(c);
+            }
         }
     }
 
-    // ======================================================
-    // HELPERS
-    // ======================================================
+    // ==================================================
+    // INVENTORY
+    // ==================================================
+    private void openInventoryMenu() {
 
-    private JPanel createDarkPanel() {
+        List<Item> items = GameState.getInventory().getItems();
+        if (items.isEmpty()) return;
 
-        JPanel p =
-                new JPanel();
-
-        p.setBackground(PANEL_COLOR);
-
-        return p;
-    }
-
-    private JButton createButton(String text) {
-
-        JButton b =
-                new JButton(text);
-
-        b.setFocusPainted(false);
-
-        b.setFont(NORMAL_FONT);
-
-        b.setForeground(Color.WHITE);
-
-        b.setBackground(BUTTON_COLOR);
-
-        b.setPreferredSize(
-                new Dimension(160, 50)
+        Item selected = (Item) JOptionPane.showInputDialog(
+                this,
+                "Seleccioná item",
+                "Inventario",
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                items.toArray(new Item[0]),
+                items.get(0)
         );
 
-        return b;
+        if (selected == null || selectedTarget == null) return;
+
+        controller.useItem(selected, selectedTarget);
     }
 
-    private void refreshMain() {
+    // ==================================================
+    // SKILLS
+    // ==================================================
+    private void openSkillMenu() {
 
-        mainPanel.revalidate();
+        GameCharacter current =
+                BattleSystem.getCurrentCharacter();
 
-        mainPanel.repaint();
-    }
+        if (current == null) return;
 
-    // ======================================================
-    // LOG
-    // ======================================================
+        List<Skill> skills = current.getSkills();
+        if (skills.isEmpty()) return;
 
-    public void log(String text) {
-
-        if (logArea == null) {
-            return;
-        }
-
-        logArea.append("\n• " + text);
-
-        logArea.setCaretPosition(
-                logArea.getDocument().getLength()
+        Skill selected = (Skill) JOptionPane.showInputDialog(
+                this,
+                "Seleccioná skill",
+                "Skills",
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                skills.toArray(new Skill[0]),
+                skills.get(0)
         );
+
+        if (selected == null) return;
+
+        controller.useSkill(selected, selectedTarget);
     }
 
-    // ======================================================
-    // BUTTONS
-    // ======================================================
-
+    // ==================================================
+    // BATTLE UI
+    // ==================================================
     public void enableButtons(boolean enabled) {
 
-        if (attackBtn == null) {
-            return;
-        }
-
-        attackBtn.setEnabled(enabled);
-
-        skillBtn.setEnabled(enabled);
-
-        defendBtn.setEnabled(enabled);
-
-        itemBtn.setEnabled(enabled);
+        if (attackBtn != null) attackBtn.setEnabled(enabled);
+        if (skillBtn != null) skillBtn.setEnabled(enabled);
+        if (defendBtn != null) defendBtn.setEnabled(enabled);
+        if (itemBtn != null) itemBtn.setEnabled(enabled);
     }
 
-    // ======================================================
-    // END SCREEN
-    // ======================================================
+    private JPanel createBattleCard(GameCharacter c) {
 
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setOpaque(false);
+
+        JButton button = new JButton();
+
+        button.addActionListener(
+                e -> selectedTarget = c);
+
+        ImageIcon icon =
+                new ImageIcon(
+                        getCharacterImage(c.getName()));
+
+        Image img =
+                icon.getImage().getScaledInstance(
+                        90,
+                        90,
+                        Image.SCALE_SMOOTH);
+
+        button.setIcon(new ImageIcon(img));
+
+        button.setVerticalTextPosition(
+                SwingConstants.BOTTOM);
+
+        button.setHorizontalTextPosition(
+                SwingConstants.CENTER);
+
+        String extra = "";
+
+        if (c instanceof PlayerCharacter p) {
+            extra =
+                "<br>LVL: " + p.getLevel()
+                + "<br>EXP: " + p.getExp() + "/" + p.getExpToLevel();
+        }
+
+        button.setText(
+            "<html><center>"
+            + c.getName()
+            + extra
+            + "<br>HP: " + c.getHp() + "/" + c.getMaxHp()
+            + "<br>ATK: " + c.getAttack()
+            + "<br>DEF: " + c.getDefense()
+            + "</center></html>"
+        );
+
+        JProgressBar hpBar =
+                new JProgressBar(
+                        0,
+                        c.getMaxHp());
+
+        hpBar.setValue(c.getHp());
+        hpBar.setStringPainted(true);
+
+        panel.add(button, BorderLayout.CENTER);
+        panel.add(hpBar, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+    public void refresh() {
+
+        if (playerPanel == null || enemyPanel == null)
+            return;
+
+        playerPanel.removeAll();
+        enemyPanel.removeAll();
+
+        for (GameCharacter c : GameState.getParty()) {
+
+            if (c.isAlive()) {
+                playerPanel.add(createBattleCard(c));
+            }
+        }
+
+        for (GameCharacter c : GameState.getEnemies()) {
+
+            if (c.isAlive()) {
+                enemyPanel.add(createBattleCard(c));
+            }
+        }
+
+        playerPanel.revalidate();
+        enemyPanel.revalidate();
+
+        playerPanel.repaint();
+        enemyPanel.repaint();
+    }
+
+    // ==================================================
+    // END SCREEN
+    // ==================================================
     public void showEndScreen(boolean win) {
+
+        System.out.println("SHOW END SCREEN");
+
+        System.out.println("MOSTRANDO PANTALLA FINAL");
 
         mainPanel.removeAll();
 
         BackgroundPanel bg =
-                new BackgroundPanel(
-                        "resources/contratapa.jpg"
-                );
+                new BackgroundPanel("resources/contratapa.jpg");
 
-        bg.setLayout(
-                new GridBagLayout()
-        );
-
-        JPanel panel =
-                createDarkPanel();
-
-        panel.setLayout(
-                new BorderLayout()
-        );
-
-        panel.setBorder(
-                BorderFactory.createEmptyBorder(
-                        40,
-                        60,
-                        40,
-                        60
-                )
-        );
+        bg.setLayout(new BorderLayout());
 
         JLabel result =
                 new JLabel(
-                        win
-                                ? "GANASTE"
-                                : "PERDISTE"
-                );
+                        win ? "¡GANASTE!" : "¡PERDISTE!",
+                        JLabel.CENTER);
 
-        result.setHorizontalAlignment(
-                JLabel.CENTER
-        );
+        result.setFont(new Font("Arial", Font.BOLD, 40));
+        result.setForeground(Color.WHITE);
 
-        result.setForeground(
-                win
-                        ? Color.GREEN
-                        : Color.RED
-        );
+        JPanel buttons = new JPanel(new FlowLayout());
+        buttons.setOpaque(false);
 
-        result.setFont(
-                new Font(
-                        "Arial",
-                        Font.BOLD,
-                        42
-                )
-        );
+        JButton homeBtn = new JButton("VOLVER AL INICIO");
+        JButton selectBtn =
+                new JButton("SELECCIONAR PERSONAJES");
 
-        panel.add(result, BorderLayout.CENTER);
+        homeBtn.addActionListener(
+                e -> showStartScreen());
 
-        JPanel buttonPanel = new JPanel(new FlowLayout());
-                buttonPanel.setOpaque(false);
+        selectBtn.addActionListener(
+                e -> characterSelectionScreen());
 
-                JButton inicioButton =
-                        createButton("VOLVER AL INICIO");
+        buttons.add(homeBtn);
+        buttons.add(selectBtn);
 
-                inicioButton.addActionListener(
-                        e -> showStartScreen()
-                );
+        bg.add(result, BorderLayout.CENTER);
+        bg.add(buttons, BorderLayout.SOUTH);
 
-                JButton personajesButton =
-                        createButton("SELECCIONAR PERSONAJES");
+        mainPanel.add(bg);
 
-                personajesButton.addActionListener(
-                        e -> characterSelectionScreen()
-                );
+        refreshMain();
+    }
 
-                buttonPanel.add(inicioButton);
-                buttonPanel.add(personajesButton);
+    public void refreshMain() {
+        mainPanel.revalidate();
+        mainPanel.repaint();
+    }
 
-                panel.add(buttonPanel, BorderLayout.SOUTH);
-
-                bg.add(panel);
-
-                mainPanel.add(bg);
-
-                refreshMain();
+    public void log(String text) {
+        if (logArea != null) {
+            logArea.append("\n• " + text);
         }
+    }
 
-    // ======================================================
-    // BACKGROUND PANEL
-    // ======================================================
-
-    private static class BackgroundPanel
-            extends JPanel {
-
-        private final Image background;
-
-        public BackgroundPanel(String path) {
-
-            background =
-                    new ImageIcon(path)
-                            .getImage();
-        }
-
-        @Override
-        protected void paintComponent(
-                Graphics g
-        ) {
-
-            super.paintComponent(g);
-
-            g.drawImage(
-                    background,
-                    0,
-                    0,
-                    getWidth(),
-                    getHeight(),
-                    this
-            );
-        }
+    public void setSelectedTarget(GameCharacter c) {
+        selectedTarget = c;
     }
 }

@@ -1,31 +1,33 @@
 package system;
 
+import items.HealItem;
 import items.Item;
+import items.ManaItem;
 import model.*;
 import skills.Skill;
-import ui.GameUI;
+import battle.DefendAction;
+import ui.BattleListener;
 
 import java.util.List;
+import java.util.Random;
+
+import javax.swing.SwingUtilities;
 
 public class BattleSystem {
 
     private static GameCharacter current;
-
-    private static GameUI ui;
-
+    private static BattleListener ui;
     private static int totalBattleExp = 0;
 
     // =====================================================
     // UI
     // =====================================================
 
-    public static void setUI(GameUI gameUI){
-
-        ui = gameUI;
+    public static void setUI(BattleListener ui) {
+        BattleSystem.ui = ui;
     }
 
-    public static GameCharacter getCurrentCharacter(){
-
+    public static GameCharacter getCurrentCharacter() {
         return current;
     }
 
@@ -33,12 +35,11 @@ public class BattleSystem {
     // START BATTLE
     // =====================================================
 
-    public static void startBattle(){
+    public static void startBattle() {
 
         totalBattleExp = 0;
 
-        if(GameState.getEnemies().isEmpty()){
-
+        if (GameState.getEnemies().isEmpty()) {
             GameState.getEnemies().addAll(
                     EnemyFactory.createEnemies()
             );
@@ -56,71 +57,72 @@ public class BattleSystem {
     // NEXT TURN
     // =====================================================
 
-    public static void nextTurn(){
+    public static void nextTurn() {
 
         GameState.sync();
 
-        if(isBattleOver()){
-
+        if (isBattleOver()) {
             finishBattle();
-
             return;
         }
 
         current = TurnManager.next();
 
-        if(current == null || !current.isAlive()){
-
+        if (current == null || !current.isAlive()) {
             nextTurn();
-
             return;
         }
 
         current.applyStatusEffects();
 
-        if(current instanceof PlayerCharacter){
+        if (current instanceof PlayerCharacter) {
 
             ui.enableButtons(true);
 
-            ui.log(
-                    "Turno de " +
-                    current.getName()
-            );
+            ui.log("Turno de " + current.getName());
 
-        } else {
-
-            current.act();
-
-            endTurn();
+            ui.refresh();
+            return;
         }
 
-        ui.refresh();
+        // TURNOS ENEMIGOS
+        executeEnemyTurn();
+
+        endTurn();
+    }
+
+    // =====================================================
+    // ENEMY TURN
+    // =====================================================
+
+    private static void executeEnemyTurn() {
+
+        if (current instanceof HealerEnemy healer) {
+
+            healer.act(
+                    GameState.getEnemies(),
+                    GameState.getParty()
+            ).execute();
+
+        } else {
+            current.act();
+        }
     }
 
     // =====================================================
     // ATTACK
     // =====================================================
 
-    public static void attack(
-            GameCharacter target
-    ){
+    public static void attack(GameCharacter target) {
 
-        if(current == null || target == null){
-
+        if (current == null || target == null) {
             ui.log("Acción inválida");
-
             return;
         }
 
-        target.takeDamage(
-                current.getAttack()
-        );
+        target.takeDamage(current.getAttack());
 
-        ui.log(
-                current.getName()
-                + " atacó a "
-                + target.getName()
-        );
+        ui.log(current.getName() + " atacó a " + target.getName());
 
         removeIfDead(target);
 
@@ -131,39 +133,28 @@ public class BattleSystem {
     // SKILL
     // =====================================================
 
-    public static void useSkill(
-            Skill skill,
-            GameCharacter target
-    ){
+    public static void useSkill(Skill skill, GameCharacter target) {
 
-        if(skill == null || current == null){
-
+        if (skill == null || current == null) {
             ui.log("Acción inválida");
-
             return;
         }
 
         try {
 
-            if(target == null){
-
+            if (target == null) {
                 target = current;
             }
 
             skill.use(current, target);
 
-            ui.log(
-                    current.getName()
-                    + " usó "
-                    + skill.getName()
-            );
+            ui.log(current.getName() + " usó " + skill.getName());
 
             removeIfDead(target);
 
             endTurn();
 
-        } catch (GameException e){
-
+        } catch (GameException e) {
             ui.log(e.getMessage());
         }
     }
@@ -172,18 +163,13 @@ public class BattleSystem {
     // DEFEND
     // =====================================================
 
-    public static void defend(){
+    public static void defend() {
 
-        if(current == null){
-            return;
-        }
+        if (current == null) return;
 
-        current.defend();
+        new DefendAction(current).execute();
 
-        ui.log(
-                current.getName()
-                + " se defendió"
-        );
+        ui.log(current.getName() + " se defendió");
 
         endTurn();
     }
@@ -192,15 +178,10 @@ public class BattleSystem {
     // ITEM
     // =====================================================
 
-    public static void useItem(
-            Item item,
-            GameCharacter target
-    ){
+    public static void useItem(Item item, GameCharacter target) {
 
-        if(item == null || target == null){
-
+        if (item == null || target == null) {
             ui.log("Item inválido");
-
             return;
         }
 
@@ -208,14 +189,13 @@ public class BattleSystem {
 
         ui.log(
                 current.getName()
-                + " usó "
-                + item.getName()
-                + " sobre "
-                + target.getName()
+                        + " usó "
+                        + item.getName()
+                        + " sobre "
+                        + target.getName()
         );
 
-        GameState.getInventory()
-                .remove(item);
+        GameState.getInventory().remove(item);
 
         removeIfDead(target);
 
@@ -226,36 +206,27 @@ public class BattleSystem {
     // REMOVE DEAD
     // =====================================================
 
-    private static void removeIfDead(
-            GameCharacter target
-    ){
+    private static void removeIfDead(GameCharacter target) {
 
-        if(target == null){
-            return;
-        }
+        if (target == null) return;
 
-        if(!target.isAlive()){
+        if (!target.isAlive()) {
 
-            // =============================================
-            // EXP
-            // =============================================
-
-            if(target instanceof EnemyCharacter e){
-
-                totalBattleExp +=
-                        e.getExpReward();
+            if (target instanceof EnemyCharacter e) {
+                totalBattleExp += e.getExpReward();
             }
 
-            GameState.getEnemies()
-                    .remove(target);
+            GameState.getEnemies().remove(target);
+            GameState.getParty().remove(target);
 
-            GameState.getParty()
-                    .remove(target);
+            ui.log(target.getName() + " fue derrotado");
 
-            ui.log(
-                    target.getName()
-                    + " fue derrotado"
-            );
+            ui.refresh();
+
+            // Verificar inmediatamente si terminó la batalla
+            if (isBattleOver()) {
+                finishBattle();
+            }
         }
     }
 
@@ -263,64 +234,79 @@ public class BattleSystem {
     // END TURN
     // =====================================================
 
-    private static void endTurn(){
+    private static void endTurn() {
+
+        GameState.sync();
+
+        ui.refresh();
+
+        if (isBattleOver()) {
+            finishBattle();
+            return;
+        }
 
         TurnManager.endTurn(current);
 
         ui.enableButtons(false);
 
-        ui.refresh();
-
-        nextTurn();
+        SwingUtilities.invokeLater(BattleSystem::nextTurn);
     }
 
     // =====================================================
     // BATTLE OVER
     // =====================================================
 
-    public static boolean isBattleOver(){
+    public static boolean isBattleOver() {
 
-        boolean playersAlive =
-                GameState.getParty()
+        boolean playersAlive = GameState.getParty()
                 .stream()
-                .anyMatch(
-                        GameCharacter::isAlive
-                );
+                .anyMatch(GameCharacter::isAlive);
 
-        boolean enemiesAlive =
-                GameState.getEnemies()
+        boolean enemiesAlive = GameState.getEnemies()
                 .stream()
-                .anyMatch(
-                        GameCharacter::isAlive
-                );
+                .anyMatch(GameCharacter::isAlive);
 
-        return !playersAlive
-                || !enemiesAlive;
+        System.out.println("Jugadores vivos: " + playersAlive);
+        System.out.println("Enemigos vivos: " + enemiesAlive);
+        System.out.println("Cantidad enemigos: "
+                + GameState.getEnemies().size());
+
+        return !playersAlive || !enemiesAlive;
     }
 
     // =====================================================
     // FINISH BATTLE
     // =====================================================
 
-    private static void finishBattle(){
+    private static void finishBattle() {
 
-        boolean playerWon =
-                GameState.getParty()
+        System.out.println("=== FINISH BATTLE ===");
+
+        boolean playersAlive = GameState.getParty()
                 .stream()
                 .anyMatch(GameCharacter::isAlive);
 
-        if(playerWon){
+        boolean enemiesAlive = GameState.getEnemies()
+                .stream()
+                .anyMatch(GameCharacter::isAlive);
+
+        System.out.println("Players vivos: " + playersAlive);
+        System.out.println("Enemies vivos: " + enemiesAlive);
+        System.out.println("Party size: " + GameState.getParty().size());
+        System.out.println("Enemies size: " + GameState.getEnemies().size());
+
+        if (!enemiesAlive) {
+
+            System.out.println("VICTORIA");
 
             rewardExperience();
-
-            // Restaura la selección original de enemigos
-            GameState.setEnemies(
-                    GameState.getSelectedEnemies()
-            );
-
             ui.showEndScreen(true);
+            return;
+        }
 
-        } else {
+        if (!playersAlive) {
+
+            System.out.println("DERROTA");
 
             ui.showEndScreen(false);
         }
@@ -330,51 +316,87 @@ public class BattleSystem {
     // EXP
     // =====================================================
 
-    private static void rewardExperience(){
+    private static void rewardExperience() {
 
-        for(GameCharacter player :
-                GameState.getParty()){
+        ui.log("=== RECOMPENSAS ===");
+        ui.log("EXP total obtenida: " + totalBattleExp);
 
-            if(player instanceof PlayerCharacter p
-                    && p.isAlive()){
+        for (GameCharacter p : GameState.getParty()) {
 
-                p.gainExp(totalBattleExp);
+            int nivelAnterior = p.getLevel();
+            int atkAnterior = p.getAttack();
+            int defAnterior = p.getDefense();
+            int hpAnterior = p.getMaxHp();
+
+            p.gainExp(totalBattleExp);
+
+            ui.log(p.getName() + " ganó "
+                    + totalBattleExp + " EXP");
+
+            if (p.getLevel() > nivelAnterior) {
+
+                ui.log(
+                    p.getName()
+                    + " subió al nivel "
+                    + p.getLevel()
+                );
+
+                ui.log(
+                    "ATK: " + atkAnterior
+                    + " -> " + p.getAttack()
+                );
+
+                ui.log(
+                    "DEF: " + defAnterior
+                    + " -> " + p.getDefense()
+                );
+
+                ui.log(
+                    "HP Máx: " + hpAnterior
+                    + " -> " + p.getMaxHp()
+                );
             }
         }
 
-        ui.log(
-                "EXP obtenida: "
-                + totalBattleExp
-        );
+        Random random = new Random();
+
+        int opcion = random.nextInt(2);
+
+        if(opcion == 0){
+
+            GameState.getInventory().add(
+                    new HealItem("Poción",50));
+
+            ui.log("Obtienes una Poción.");
+        }
+        else{
+
+            GameState.getInventory().add(
+                    new ManaItem("Éter",30));
+
+            ui.log("Obtienes un Éter.");
+        }
     }
 
     // =====================================================
     // HELPERS
     // =====================================================
 
-    public static List<GameCharacter>
-    getAlivePlayers(){
-
+    public static List<GameCharacter> getAlivePlayers() {
         return GameState.getParty()
                 .stream()
-                .filter(
-                        GameCharacter::isAlive
-                )
+                .filter(GameCharacter::isAlive)
                 .toList();
     }
 
-    public static List<GameCharacter>
-    getAliveEnemies(){
-
+    public static List<GameCharacter> getAliveEnemies() {
         return GameState.getEnemies()
                 .stream()
-                .filter(
-                        GameCharacter::isAlive
-                )
+                .filter(GameCharacter::isAlive)
                 .toList();
     }
 
-    public static GameUI getUI() {
+    public static BattleListener getUI() {
         return ui;
     }
 }

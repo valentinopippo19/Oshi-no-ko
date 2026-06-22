@@ -193,15 +193,6 @@ public abstract class GameCharacter
     }
 
     // =====================================================
-    // DEFEND
-    // =====================================================
-
-    public void defend(){
-
-        status = "DEFENDING";
-    }
-
-    // =====================================================
     // STATS
     // =====================================================
 
@@ -340,12 +331,12 @@ public abstract class GameCharacter
         throw new UnsupportedOperationException("Unimplemented method 'getClassAttackBonus'");
     }
 
-    public void addEffect(Effect effect) {
-        throw new UnsupportedOperationException("Unimplemented method 'addEffect'");
-    }
-
     public void addEffect(AttackBuffEffect effect) {
         throw new UnsupportedOperationException("Unimplemented method 'addEffect'");
     }
+
+    public abstract int getLevel();
+
+    public abstract void gainExp(int totalBattleExp);
 
 }

@@ -6,15 +6,18 @@ public class ManaItem extends Item {
 
     private final int manaRestore;
 
-    public ManaItem(
-            String name,
-            int manaRestore
-    ) {
+    // ✔ DEFAULT (para tu juego)
+    public ManaItem() {
+        super("Mana Item");
+        this.manaRestore = 15;
+    }
+
+    // ✔ PERSONALIZABLE
+    public ManaItem(String name, int manaRestore) {
 
         super(name);
 
         if (manaRestore <= 0) {
-
             throw new IllegalArgumentException(
                     "La restauración de mana debe ser positiva"
             );
@@ -25,7 +28,6 @@ public class ManaItem extends Item {
 
     @Override
     public void use(GameCharacter target) {
-
         target.restoreMana(manaRestore);
     }
 
@@ -35,8 +37,6 @@ public class ManaItem extends Item {
 
     @Override
     public String toString() {
-
-        return getName() +
-                " (+" + manaRestore + " MP)";
+        return getName() + " (+" + manaRestore + " MP)";
     }
 }

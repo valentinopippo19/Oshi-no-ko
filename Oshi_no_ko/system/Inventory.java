@@ -1,6 +1,8 @@
 package system;
-
+import items.BuffItem;
+import items.HealItem;
 import items.Item;
+import items.ManaItem;
 import model.GameCharacter;
 
 import java.io.Serializable;
@@ -17,8 +19,13 @@ public class Inventory
 
     public Inventory() {
 
-        this.items =
-                new ArrayList<>();
+    this.items = new ArrayList<>();
+
+    // Ítems iniciales
+        add(new HealItem("Poción", 30));
+        add(new HealItem("Poción", 30));
+        add(new ManaItem("Éter", 20));
+        add(new BuffItem("Buff Ataque", 5, 0));
     }
 
     // ======================================================

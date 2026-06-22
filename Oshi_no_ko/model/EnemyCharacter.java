@@ -57,10 +57,6 @@ public class EnemyCharacter extends GameCharacter {
                 targets.get(RANDOM.nextInt(targets.size()));
 
         target.takeDamage(getAttack());
-
-        BattleSystem.getUI().log(
-            getName() + " atacó a " + target.getName()
-        );
     }
 
     // =====================================================
@@ -73,11 +69,6 @@ public class EnemyCharacter extends GameCharacter {
         if (!isAlive()) return "DEAD";
         if (defending) return "DEFENDING";
         return "NORMAL";
-    }
-
-    @Override
-    public void defend() {
-        defending = true;
     }
 
     // =====================================================
@@ -96,5 +87,15 @@ public class EnemyCharacter extends GameCharacter {
     @Override
     public void restoreMana(int amount) {
         mana = Math.min(maxMana, mana + amount);
+    }
+
+    @Override
+    public int getLevel() {
+        throw new UnsupportedOperationException("Unimplemented method 'getLevel'");
+    }
+
+    @Override
+    public void gainExp(int totalBattleExp) {
+        throw new UnsupportedOperationException("Unimplemented method 'gainExp'");
     }
 }
