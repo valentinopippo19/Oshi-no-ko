@@ -137,11 +137,13 @@ public class PlayerCharacter
         return expToLevel;
     }
 
+    @Override
     protected int getClassManaBonus() {
-        throw new UnsupportedOperationException("Unimplemented method 'getClassManaBonus'");
+        return 0;
     }
 
+    @Override
     protected int getClassAttackBonus() {
-        throw new UnsupportedOperationException("Unimplemented method 'getClassAttackBonus'");
+        return 0;
     }
 }

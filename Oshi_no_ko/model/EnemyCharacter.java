@@ -91,11 +91,11 @@ public class EnemyCharacter extends GameCharacter {
 
     @Override
     public int getLevel() {
-        throw new UnsupportedOperationException("Unimplemented method 'getLevel'");
+        return 0; // Los enemigos no tienen nivel
     }
 
     @Override
     public void gainExp(int totalBattleExp) {
-        throw new UnsupportedOperationException("Unimplemented method 'gainExp'");
+        // Los enemigos no ganan experiencia
     }
 }

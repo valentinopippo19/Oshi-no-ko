@@ -492,8 +492,6 @@ public class GameUI extends JFrame implements BattleListener {
 
         System.out.println("SHOW END SCREEN");
 
-        System.out.println("MOSTRANDO PANTALLA FINAL");
-
         mainPanel.removeAll();
 
         BackgroundPanel bg =
@@ -508,6 +506,61 @@ public class GameUI extends JFrame implements BattleListener {
 
         result.setFont(new Font("Arial", Font.BOLD, 40));
         result.setForeground(Color.WHITE);
+
+        // ===== NUEVO PANEL DE RESUMEN =====
+
+        JTextArea summaryArea = new JTextArea();
+        summaryArea.setEditable(false);
+        summaryArea.setOpaque(false);
+        summaryArea.setForeground(Color.WHITE);
+        summaryArea.setFont(new Font("Arial", Font.BOLD, 16));
+
+        StringBuilder summary = new StringBuilder();
+
+        if (win) {
+
+            summary.append("RECOMPENSAS:\n\n");
+
+            for (GameCharacter character : GameState.getParty()) {
+
+                PlayerCharacter p = (PlayerCharacter) character;
+
+                summary.append(p.getName())
+                        .append("\n");
+
+                summary.append("Nivel: ")
+                        .append(p.getLevel())
+                        .append("\n");
+
+                summary.append("EXP actual: ")
+                        .append(p.getExp())
+                        .append("/")
+                        .append(p.getExpToLevel())
+                        .append("\n");
+
+                summary.append("HP Máx: ")
+                        .append(p.getMaxHp())
+                        .append("\n");
+
+                summary.append("Ataque: ")
+                        .append(p.getAttack())
+                        .append("\n");
+
+                summary.append("Defensa: ")
+                        .append(p.getDefense())
+                        .append("\n\n");
+            }
+        }
+
+        summaryArea.setText(summary.toString());
+
+        JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.setOpaque(false);
+
+        centerPanel.add(result, BorderLayout.NORTH);
+        centerPanel.add(summaryArea, BorderLayout.CENTER);
+
+        // ===== BOTONES =====
 
         JPanel buttons = new JPanel(new FlowLayout());
         buttons.setOpaque(false);
@@ -525,7 +578,7 @@ public class GameUI extends JFrame implements BattleListener {
         buttons.add(homeBtn);
         buttons.add(selectBtn);
 
-        bg.add(result, BorderLayout.CENTER);
+        bg.add(centerPanel, BorderLayout.CENTER);
         bg.add(buttons, BorderLayout.SOUTH);
 
         mainPanel.add(bg);

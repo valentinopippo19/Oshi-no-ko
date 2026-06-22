@@ -324,15 +324,15 @@ public abstract class GameCharacter
     public abstract void act();
 
     protected int getClassManaBonus() {
-        throw new UnsupportedOperationException("Unimplemented method 'getClassManaBonus'");
+        return 0;
     }
 
     protected int getClassAttackBonus() {
-        throw new UnsupportedOperationException("Unimplemented method 'getClassAttackBonus'");
+        return 0;
     }
 
     public void addEffect(AttackBuffEffect effect) {
-        throw new UnsupportedOperationException("Unimplemented method 'addEffect'");
+        effects.add(effect);
     }
 
     public abstract int getLevel();
